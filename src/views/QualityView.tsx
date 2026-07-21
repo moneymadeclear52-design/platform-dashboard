@@ -1,8 +1,10 @@
 import { useEffect, useState } from "react";
 import {
-  fetchEvalRuns, fetchBenchmarks, fetchApprovals, decideApproval,
-  EvalRun, BenchmarkRow, Approval,
+  fetchEvalRuns, fetchBenchmarks, fetchApprovals, decideApproval, fetchFeedback,
+  EvalRun, BenchmarkRow, Approval, CategoryBoost,
 } from "../api";
+
+const FEEDBACK_CHANNELS = ["RapidReelz", "CrimeScope", "MoneyMadeClear", "RapidReelzStories"];
 
 function usePoll<T>(fn: () => Promise<T>, ms: number, dep = 0): T | null {
   const [data, setData] = useState<T | null>(null);
@@ -134,11 +136,67 @@ function ApprovalPanel() {
   );
 }
 
+/* ── Learned boosts: closed-loop feedback per channel ── */
+function FeedbackPanel() {
+  const [channel, setChannel] = useState(FEEDBACK_CHANNELS[0]);
+  const [boosts, setBoosts] = useState<CategoryBoost[] | null>(null);
+
+  useEffect(() => {
+    let live = true;
+    setBoosts(null);
+    fetchFeedback(channel).then(b => live && setBoosts(b)).catch(() => live && setBoosts([]));
+    return () => { live = false; };
+  }, [channel]);
+
+  return (
+    <div>
+      <div className="mb-3 flex gap-1 font-mono text-[10px]">
+        {FEEDBACK_CHANNELS.map(c => (
+          <button
+            key={c}
+            onClick={() => setChannel(c)}
+            className={`rounded px-2 py-1 transition-colors ${
+              channel === c ? "bg-line text-ink" : "text-dim hover:text-ink"
+            }`}
+          >{c}</button>
+        ))}
+      </div>
+      {!boosts ? <Empty label="Loading…" /> :
+        boosts.length === 0 ? <Empty label="No performance data yet — boosts appear once analytics are recorded." /> :
+        <ul className="space-y-2">
+          {boosts.map(b => {
+            const above = b.boost >= 1.0;
+            return (
+              <li key={b.category} className="flex items-center gap-3">
+                <span className="w-28 truncate font-mono text-xs text-ink">{b.category}</span>
+                {/* center line at 1.0; bar extends right (favor) or left (suppress) */}
+                <div className="relative h-3 flex-1 rounded bg-line">
+                  <div className="absolute left-1/2 top-0 h-3 w-px bg-dim" />
+                  <div
+                    className={`absolute top-0 h-3 ${above ? "bg-okc/70 left-1/2" : "bg-fail/70 right-1/2"}`}
+                    style={{ width: `${Math.min(Math.abs(b.boost - 1.0) * 100, 50)}%` }}
+                  />
+                </div>
+                <span className={`w-20 text-right font-mono text-xs ${above ? "text-okc" : "text-fail"}`}>
+                  ×{b.boost.toFixed(2)}
+                </span>
+                <span className="w-10 text-right font-mono text-[10px] text-dim">n={b.sample_size}</span>
+              </li>
+            );
+          })}
+        </ul>}
+    </div>
+  );
+}
+
 export default function QualityView() {
   return (
     <main className="mx-auto grid max-w-6xl gap-4 p-6 lg:grid-cols-2">
       <Panel title="Prompt evaluations"><EvalPanel /></Panel>
       <Panel title="Model benchmarks"><BenchmarkPanel /></Panel>
+      <div className="lg:col-span-2">
+        <Panel title="Learned category boosts — closed-loop feedback"><FeedbackPanel /></Panel>
+      </div>
       <div className="lg:col-span-2">
         <Panel title="Approval queue — human review"><ApprovalPanel /></Panel>
       </div>

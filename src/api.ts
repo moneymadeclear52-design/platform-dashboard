@@ -102,3 +102,13 @@ export async function decideApproval(id: number, approved: boolean, note?: strin
   if (!r.ok) throw new Error(`decide → ${r.status}`);
   return r.json();
 }
+
+// ── Phase 6: feedback ────────────────────────────────────────────────────────
+export interface CategoryBoost {
+  category: string;
+  boost: number;
+  sample_size: number;
+  avg_performance: number;
+}
+export const fetchFeedback = (channel: string) =>
+  get<CategoryBoost[]>(`/feedback/${encodeURIComponent(channel)}`);
