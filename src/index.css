@@ -1,0 +1,23 @@
+@import "tailwindcss";
+
+/* Edit-suite palette: deep slate console, tally-lamp amber signature accent,
+   steel for data, ok/fail for status. */
+@theme {
+  --color-bg: #171d26;
+  --color-panel: #1f2733;
+  --color-line: #2c3644;
+  --color-ink: #e8ecf1;
+  --color-dim: #7c8797;
+  --color-tally: #ffb454;
+  --color-steel: #7fa6c9;
+  --color-okc: #5fb88a;
+  --color-fail: #e06c5f;
+  --font-display: "Space Grotesk", system-ui, sans-serif;
+  --font-mono: "IBM Plex Mono", ui-monospace, monospace;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  * { animation: none !important; transition: none !important; }
+}
+
+:focus-visible { outline: 2px solid var(--color-tally); outline-offset: 2px; }
