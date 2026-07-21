@@ -59,3 +59,46 @@ export const fetchHealth = () => get<Health>("/health");
 export const fetchRuns = () => get<WorkflowRun[]>("/runs?limit=25");
 export const fetchUsage = () => get<UsageRow[]>("/metrics/usage?days=30");
 export const fetchJobs = () => get<Job[]>("/jobs");
+// ── Phase 5 additions to api.ts (append these) ──────────────────────────────
+
+export interface EvalRun {
+  id: number;
+  at: string;
+  prompt: string;
+  version: number | null;
+  model: string;
+  mean_score: number;
+  pass_rate: number;
+}
+
+export interface BenchmarkRow {
+  id: number;
+  at: string;
+  provider: string;
+  model: string;
+  score: number;
+  latency_s: number;
+}
+
+export interface Approval {
+  id: number;
+  workflow: string;
+  item_ref: string;
+  summary: string | null;
+  score: number | null;
+  at: string;
+}
+
+export const fetchEvalRuns = () => get<EvalRun[]>("/eval/runs?limit=20");
+export const fetchBenchmarks = () => get<BenchmarkRow[]>("/benchmarks?limit=40");
+export const fetchApprovals = () => get<Approval[]>("/approvals");
+
+export async function decideApproval(id: number, approved: boolean, note?: string) {
+  const r = await fetch(`${BASE}/approvals/${id}/decide`, {
+    method: "POST",
+    headers: { ...headers(), "Content-Type": "application/json" },
+    body: JSON.stringify({ approved, note }),
+  });
+  if (!r.ok) throw new Error(`decide → ${r.status}`);
+  return r.json();
+}
